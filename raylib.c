@@ -1,53 +1,106 @@
 #include "raylib.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define HEIGHT 640
+#define WIDTH 640
+
+typedef struct Seeker {
+  int x;
+  int y;
+  int prev_x;
+  int prev_y;
+  int anchor_x;
+  int anchor_y;
+} Seeker;
+
+int rand_y() { return rand() % HEIGHT; }
+int rand_x() { return rand() % WIDTH; }
 
 int main(void) {
-  size_t width = 640;
-  size_t height = 640;
-  InitWindow(width, HEIGHT, "hello world");
+  srand(time(NULL));
+  InitWindow(WIDTH, HEIGHT, "hello world");
   bool paused = 0;
-  int x = 0;
-  int y = 0;
-  int target_x = 600;
-  int target_y = 400;
-  int ball_x = 0;
-  int ball_y = 0;
+  int target_x = rand_x();
+  int target_y = rand_y();
+  Seeker seekers[] = {
+      {.prev_x = 0,
+       .prev_y = 0,
+       .x = 0,
+       .y = 0,
+       .anchor_x = rand_x(),
+       .anchor_y = rand_y()},
+      /* {.x = 0, .y = 0, .anchor_x = rand_x(), .anchor_y = rand_y()}, */
+      /* {.x = 0, .y = 0, .anchor_x = rand_x(), .anchor_y = rand_y()}, */
+      /* {.x = 0, .y = 0, .anchor_x = rand_x(), .anchor_y = rand_y()}, */
+      /* {.x = 0, .y = 0, .anchor_x = rand_x(), .anchor_y = rand_y()}, */
+      /* {.x = 0, .y = 0, .anchor_x = rand_x(), .anchor_y = rand_y()}, */
+      /* {.x = 0, .y = 0, .anchor_x = rand_x(), .anchor_y = rand_y()}, */
+      /* {.x = 0, .y = 0, .anchor_x = rand_x(), .anchor_y = rand_y()}, */
+      /* {.x = 0, .y = 0, .anchor_x = rand_x(), .anchor_y = rand_y()}, */
+      /* {.x = 0, .y = 0, .anchor_x = rand_x(), .anchor_y = rand_y()}, */
+  };
+  size_t num_seekers = sizeof(seekers) / sizeof(Seeker);
+
+  size_t frame = 0;
+
   while (!WindowShouldClose()) {
     if (IsKeyPressed(KEY_SPACE)) {
       paused = !paused;
     }
     BeginDrawing();
     ClearBackground(RED);
-    int dx = x / 8;
-    int dy = y / 8;
-    int x_loc = (ball_x + dx) % width;
-    int y_loc = (ball_y + dy) % height;
     if (!paused) {
-      // printf("ball_y:%zu,y:%zu,dy:%zu,y_loc:%zu\n", ball_y, y, dy, y_loc);
-      if (x_loc == target_x && y_loc == target_y) {
-        x = 0;
-        y = 0;
-        ball_x = target_x;
-        ball_y = target_y;
-        target_x = rand() % height;
-        target_y = rand() % width;
-      } else {
-        if (y_loc > target_y) {
-          y--;
-        } else if (y_loc < target_y) {
-          y++;
-        }
-        if (x_loc > target_x) {
-          x--;
-        } else if (x_loc < target_x) {
-          x++;
+      for (size_t i = 0; i < num_seekers; i++) {
+        Seeker *seeker = &seekers[i];
+        int dx = seeker->x / 8;
+        int dy = seeker->y / 8;
+        int x_loc = (seeker->anchor_x + dx) % WIDTH;
+        int y_loc = (seeker->anchor_y + dy) % HEIGHT;
+
+        int prev_x = seeker->prev_x;
+        int prev_y = seeker->prev_y;
+        size_t x = seeker->x;
+        size_t y = seeker->y;
+
+        if (x_loc == target_x && y_loc == target_y) {
+          seeker->x = 0;
+          seeker->y = 0;
+          seeker->anchor_x = target_x;
+          seeker->anchor_y = target_y;
+          target_x = rand_x();
+          target_y = rand_y();
+          DrawCircle(x_loc, y_loc, 20, WHITE);
+        } else {
+          if (y_loc > target_y) {
+            seeker->y--;
+          } else if (y_loc < target_y) {
+            seeker->y++;
+          }
+          if (x_loc > target_x) {
+            seeker->x--;
+          } else if (x_loc < target_x) {
+            seeker->x++;
+          }
+
+          if (seeker->x - x != 0) {
+            y_loc += 16 * sinf(i + (float)frame / 200);
+          }
+          if (seeker->y - y != 0) {
+            x_loc += 16 * sinf(i + (float)frame / 200);
+          }
+
+          DrawCircle(x_loc, y_loc, 20, WHITE);
+
+          seeker->prev_x = x;
+          seeker->prev_y = y;
         }
       }
+
+      frame++;
     }
-    DrawRectangle(x_loc, y_loc, 50, 50, WHITE);
     DrawRectangle(target_x, target_y, 10, 10, YELLOW);
     EndDrawing();
   }
